@@ -8,7 +8,7 @@
  *   the Free Software Foundation; either version 2 of the License, or     *
  *   (at your option) any later version.                                   *
  *                                                                         *
- *   This program is distributed in the hope that it will be useful,       * 
+ *   This program is distributed in the hope that it will be useful,       *
  *   but WITHOUT ANY WARRANTY; without even the implied warranty of        *
  *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
  *   GNU General Public License for more details.                          *
@@ -18,12 +18,13 @@
  *   Free Software Foundation, Inc.,                                       *
  *   51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.          *
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
-                       
-/* This file contains the Core video extension functions which will be exported
- * outside of the core library.
- */
+
+ /* This file contains the Core video extension functions which will be exported
+  * outside of the core library.
+  */
 
 #include <SDL.h>
+#include <SDL_syswm.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -36,22 +37,22 @@
 #include "vidext.h"
 
 #if SDL_VERSION_ATLEAST(2,0,0)
-    #ifndef USE_GLES
-    static int l_ForceCompatibilityContext = 1;
-    #endif
+#ifndef USE_GLES
+static int l_ForceCompatibilityContext = 1;
+#endif
 #include "vidext_sdl2_compat.h"
 #endif
 
 /* local variables */
-static m64p_video_extension_functions l_ExternalVideoFuncTable = {14, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL};
+static m64p_video_extension_functions l_ExternalVideoFuncTable = { 14, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL };
 static int l_VideoExtensionActive = 0;
 static int l_VideoOutputActive = 0;
 static int l_Fullscreen = 0;
 static int l_SwapControl = 0;
-static SDL_Surface *l_pScreen = NULL;
+static SDL_Surface* l_pScreen = NULL;
 
 /* global function for use by frontend.c */
-m64p_error OverrideVideoFunctions(m64p_video_extension_functions *VideoFunctionStruct)
+m64p_error OverrideVideoFunctions(m64p_video_extension_functions* VideoFunctionStruct)
 {
     /* check input data */
     if (VideoFunctionStruct == NULL)
@@ -76,7 +77,7 @@ m64p_error OverrideVideoFunctions(m64p_video_extension_functions *VideoFunctionS
         VideoFunctionStruct->VidExtFuncGLGetDefaultFramebuffer == NULL)
     {
         l_ExternalVideoFuncTable.Functions = 14;
-        memset(&l_ExternalVideoFuncTable.VidExtFuncInit, 0, 14 * sizeof(void *));
+        memset(&l_ExternalVideoFuncTable.VidExtFuncInit, 0, 14 * sizeof(void*));
         l_VideoExtensionActive = 0;
         return M64ERR_SUCCESS;
     }
@@ -106,7 +107,7 @@ EXPORT m64p_error CALL VidExt_Init(void)
 
 #if SDL_VERSION_ATLEAST(2,0,0)
     SDL_SetHint(SDL_HINT_JOYSTICK_ALLOW_BACKGROUND_EVENTS, "1");
-    /* retrieve default swap interval/VSync */ 
+    /* retrieve default swap interval/VSync */
     l_SwapControl = SDL_GL_GetSwapInterval();
 #endif
 
@@ -148,11 +149,11 @@ EXPORT m64p_error CALL VidExt_Quit(void)
     return M64ERR_SUCCESS;
 }
 
-EXPORT m64p_error CALL VidExt_ListFullscreenModes(m64p_2d_size *SizeArray, int *NumSizes)
+EXPORT m64p_error CALL VidExt_ListFullscreenModes(m64p_2d_size* SizeArray, int* NumSizes)
 {
-    const SDL_VideoInfo *videoInfo;
+    const SDL_VideoInfo* videoInfo;
     unsigned int videoFlags;
-    SDL_Rect **modes;
+    SDL_Rect** modes;
     int i;
 
     /* call video extension override if necessary */
@@ -171,14 +172,14 @@ EXPORT m64p_error CALL VidExt_ListFullscreenModes(m64p_2d_size *SizeArray, int *
         return M64ERR_SYSTEM_FAIL;
     }
 
-    if(videoInfo->hw_available)
+    if (videoInfo->hw_available)
         videoFlags |= SDL_HWSURFACE;
     else
         videoFlags |= SDL_SWSURFACE;
 
     modes = SDL_ListModes(NULL, videoFlags);
 
-    if (modes == (SDL_Rect **) 0 || modes == (SDL_Rect **) -1)
+    if (modes == (SDL_Rect**)0 || modes == (SDL_Rect**)-1)
     {
         DebugMessage(M64MSG_WARNING, "No fullscreen SDL video modes available");
         *NumSizes = 0;
@@ -188,7 +189,7 @@ EXPORT m64p_error CALL VidExt_ListFullscreenModes(m64p_2d_size *SizeArray, int *
     i = 0;
     while (i < *NumSizes && modes[i] != NULL)
     {
-        SizeArray[i].uiWidth  = modes[i]->w;
+        SizeArray[i].uiWidth = modes[i]->w;
         SizeArray[i].uiHeight = modes[i]->h;
         i++;
     }
@@ -198,7 +199,7 @@ EXPORT m64p_error CALL VidExt_ListFullscreenModes(m64p_2d_size *SizeArray, int *
     return M64ERR_SUCCESS;
 }
 
-EXPORT m64p_error CALL VidExt_ListFullscreenRates(m64p_2d_size Size, int *NumRates, int *Rates)
+EXPORT m64p_error CALL VidExt_ListFullscreenRates(m64p_2d_size Size, int* NumRates, int* Rates)
 {
     /* call video extension override if necessary */
     if (l_VideoExtensionActive)
@@ -247,8 +248,9 @@ EXPORT m64p_error CALL VidExt_ListFullscreenRates(m64p_2d_size Size, int *NumRat
 
 EXPORT m64p_error CALL VidExt_SetVideoMode(int Width, int Height, int BitsPerPixel, m64p_video_mode ScreenMode, m64p_video_flags Flags)
 {
-    const SDL_VideoInfo *videoInfo;
+    const SDL_VideoInfo* videoInfo;
     int videoFlags = 0;
+    SDL_SysWMinfo sysInfo = { 0 };
 
     /* call video extension override if necessary */
     if (l_VideoExtensionActive)
@@ -299,11 +301,19 @@ EXPORT m64p_error CALL VidExt_SetVideoMode(int Width, int Height, int BitsPerPix
     else
         DebugMessage(M64MSG_INFO, "Setting video mode: %ix%i", Width, Height);
 
+    videoFlags |= SDL_NOFRAME;
+
     l_pScreen = SDL_SetVideoMode(Width, Height, BitsPerPixel, videoFlags);
     if (l_pScreen == NULL)
     {
         DebugMessage(M64MSG_ERROR, "SDL_SetVideoMode failed: %s", SDL_GetError());
         return M64ERR_SYSTEM_FAIL;
+    }
+
+    if (SDL_GetWindowWMInfo(SDL_VideoWindow, &sysInfo))
+    {
+        // hide window, windows only :D
+        ShowWindow(sysInfo.info.win.window, 0);
     }
 
     SDL_ShowCursor(SDL_DISABLE);
@@ -342,7 +352,7 @@ EXPORT m64p_error CALL VidExt_SetVideoModeWithRate(int Width, int Height, int Re
 #if SDL_VERSION_ATLEAST(2,0,0)
     if (!SDL_WasInit(SDL_INIT_VIDEO) || !SDL_VideoWindow)
         return M64ERR_NOT_INIT;
-    
+
     int videoFlags = 0;
     int display = GetVideoDisplay();
     int modeCount = SDL_GetNumDisplayModes(display);
@@ -424,7 +434,7 @@ EXPORT m64p_error CALL VidExt_SetVideoModeWithRate(int Width, int Height, int Re
 
 EXPORT m64p_error CALL VidExt_ResizeWindow(int Width, int Height)
 {
-    const SDL_VideoInfo *videoInfo;
+    const SDL_VideoInfo* videoInfo;
     int videoFlags = 0;
 
     /* call video extension override if necessary */
@@ -482,7 +492,7 @@ EXPORT m64p_error CALL VidExt_ResizeWindow(int Width, int Height)
     return M64ERR_SUCCESS;
 }
 
-EXPORT m64p_error CALL VidExt_SetCaption(const char *Title)
+EXPORT m64p_error CALL VidExt_SetCaption(const char* Title)
 {
     /* call video extension override if necessary */
     if (l_VideoExtensionActive)
@@ -520,7 +530,7 @@ EXPORT m64p_error CALL VidExt_ToggleFullScreen(void)
      * (see http://sdl.beuc.net/sdl.wiki/SDL_SetVideoMode), but on Windows
      * this resets the OpenGL context and video plugins don't support it yet.
      * Uncomment the next line to test it: */
-    //return VidExt_SetVideoMode(l_pScreen->w, l_pScreen->h, l_pScreen->format->BitsPerPixel, l_Fullscreen ? M64VIDEO_WINDOWED : M64VIDEO_FULLSCREEN);
+     //return VidExt_SetVideoMode(l_pScreen->w, l_pScreen->h, l_pScreen->format->BitsPerPixel, l_Fullscreen ? M64VIDEO_WINDOWED : M64VIDEO_FULLSCREEN);
     if (SDL_WM_ToggleFullScreen(l_pScreen) == 1)
     {
         l_Fullscreen = !l_Fullscreen;
@@ -540,11 +550,11 @@ EXPORT m64p_function CALL VidExt_GL_GetProcAddress(const char* Proc)
     if (!SDL_WasInit(SDL_INIT_VIDEO))
         return NULL;
 
-/* WARN: assume cast to m64p_function is supported by platform and disable warning accordingly */
-OSAL_WARNING_PUSH
-OSAL_NO_WARNING_FPTR_VOIDP_CAST
-    return (m64p_function)SDL_GL_GetProcAddress(Proc);
-OSAL_WARNING_POP
+    /* WARN: assume cast to m64p_function is supported by platform and disable warning accordingly */
+    OSAL_WARNING_PUSH
+        OSAL_NO_WARNING_FPTR_VOIDP_CAST
+        return (m64p_function)SDL_GL_GetProcAddress(Proc);
+    OSAL_WARNING_POP
 }
 
 typedef struct {
@@ -596,20 +606,20 @@ EXPORT m64p_error CALL VidExt_GL_SetAttribute(m64p_GLattr Attr, int Value)
     {
         switch (Value)
         {
-            case M64P_GL_CONTEXT_PROFILE_CORE:
-                Value = SDL_GL_CONTEXT_PROFILE_CORE;
+        case M64P_GL_CONTEXT_PROFILE_CORE:
+            Value = SDL_GL_CONTEXT_PROFILE_CORE;
 #ifndef USE_GLES
-                l_ForceCompatibilityContext = 0;
+            l_ForceCompatibilityContext = 0;
 #endif
-                break;
-            case M64P_GL_CONTEXT_PROFILE_COMPATIBILITY:
-                Value = SDL_GL_CONTEXT_PROFILE_COMPATIBILITY;
-                break;
-            case M64P_GL_CONTEXT_PROFILE_ES:
-                Value = SDL_GL_CONTEXT_PROFILE_ES;
-                break;
-            default:
-                Value = 0;
+            break;
+        case M64P_GL_CONTEXT_PROFILE_COMPATIBILITY:
+            Value = SDL_GL_CONTEXT_PROFILE_COMPATIBILITY;
+            break;
+        case M64P_GL_CONTEXT_PROFILE_ES:
+            Value = SDL_GL_CONTEXT_PROFILE_ES;
+            break;
+        default:
+            Value = 0;
         }
     }
 #endif
@@ -627,7 +637,7 @@ EXPORT m64p_error CALL VidExt_GL_SetAttribute(m64p_GLattr Attr, int Value)
     return M64ERR_INPUT_INVALID;
 }
 
-EXPORT m64p_error CALL VidExt_GL_GetAttribute(m64p_GLattr Attr, int *pValue)
+EXPORT m64p_error CALL VidExt_GL_GetAttribute(m64p_GLattr Attr, int* pValue)
 {
     int i;
 
@@ -659,21 +669,21 @@ EXPORT m64p_error CALL VidExt_GL_GetAttribute(m64p_GLattr Attr, int *pValue)
             {
                 switch (NewValue)
                 {
-                    case SDL_GL_CONTEXT_PROFILE_CORE:
-                        NewValue = M64P_GL_CONTEXT_PROFILE_CORE;
-                        break;
-                    case SDL_GL_CONTEXT_PROFILE_COMPATIBILITY:
-                        NewValue = M64P_GL_CONTEXT_PROFILE_COMPATIBILITY;
-                        break;
-                    case SDL_GL_CONTEXT_PROFILE_ES:
-                        NewValue = M64P_GL_CONTEXT_PROFILE_ES;
-                        break;
-                    default:
-                        NewValue = 0;
+                case SDL_GL_CONTEXT_PROFILE_CORE:
+                    NewValue = M64P_GL_CONTEXT_PROFILE_CORE;
+                    break;
+                case SDL_GL_CONTEXT_PROFILE_COMPATIBILITY:
+                    NewValue = M64P_GL_CONTEXT_PROFILE_COMPATIBILITY;
+                    break;
+                case SDL_GL_CONTEXT_PROFILE_ES:
+                    NewValue = M64P_GL_CONTEXT_PROFILE_ES;
+                    break;
+                default:
+                    NewValue = 0;
                 }
             }
 #endif
-            *pValue = NewValue;
+            * pValue = NewValue;
             return M64ERR_SUCCESS;
         }
     }
